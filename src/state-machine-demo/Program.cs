@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Stateless;
+using System;
 
 namespace state_machine_demo
 {
@@ -10,6 +11,16 @@ namespace state_machine_demo
 
             TrafficLight trafficLight = new TrafficLight();
 
+            Console.WriteLine(trafficLight.Graph);
+
+            trafficLight.Dump();
+
+            trafficLight.Push();
+
+            trafficLight.Dump();
+
+            trafficLight.Break();
+
             trafficLight.Dump();
 
             trafficLight.Push();
@@ -21,11 +32,7 @@ namespace state_machine_demo
             trafficLight.Dump();
 
             trafficLight.Push();
-
             trafficLight.Dump();
-
-            trafficLight.Push();
-
 
             Console.WriteLine("Press Enter to exit.");
             Console.ReadLine();
@@ -34,7 +41,7 @@ namespace state_machine_demo
 
     public static class TrafficLightExtensions
     {
-        static ConsoleColor[] colors = { ConsoleColor.Green, ConsoleColor.Red, ConsoleColor.Yellow };
+        static ConsoleColor[] colors = { ConsoleColor.Green, ConsoleColor.Red, ConsoleColor.Yellow, ConsoleColor.Blue };
 
         public static void Dump(this TrafficLight trafficLight)
         {
@@ -46,24 +53,63 @@ namespace state_machine_demo
 
 
 
-
+    // dotnet add package Stateless
 
     public class TrafficLight
     {
-        public TrafficLightState State { get; set; }
+        // public TrafficLightState State { get; set; }
 
-        public void Push()
+        public TrafficLightState State => machine.State;
+
+
+        public string Graph => Stateless.Graph.UmlDotGraph.Format(machine.GetInfo());
+
+
+
+        private readonly StateMachine<TrafficLightState, TrafficLightTrigger> machine;
+
+        private System.Timers.Timer timer;
+
+        public TrafficLight()
         {
-           if (State == TrafficLightState.Red)
-           {
-               State = TrafficLightState.Green;
-           }
-           else
-           if (State == TrafficLightState.Green)
-           {
-                State = TrafficLightState.Red;
-           }
+            machine = new StateMachine<TrafficLightState, TrafficLightTrigger>(TrafficLightState.Green);
+
+            machine.Configure(TrafficLightState.Green)
+                .OnEntry(() => Console.WriteLine("<xml><color>green</color></xml>"))
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Yellow)
+                .Permit(TrafficLightTrigger.Break, TrafficLightState.Blinking);
+
+            machine.Configure(TrafficLightState.Yellow)
+                .OnEntry(() => Console.WriteLine("<xml><color>yellow</color></xml>"))
+                .OnEntry(() => timer.Start())
+                .OnEntry(()=>timer.Stop())
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Red)
+                .Permit(TrafficLightTrigger.Break, TrafficLightState.Blinking);
+
+            machine.Configure(TrafficLightState.Red)
+                .OnEntry(() => Console.WriteLine("<xml><color>red</color></xml>"))
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Green)
+                .Permit(TrafficLightTrigger.Break, TrafficLightState.Blinking);
+
+            machine.Configure(TrafficLightState.Blinking)
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Red);
+
+            timer = new System.Timers.Timer(TimeSpan.FromSeconds(5).TotalMilliseconds);
+            timer.AutoReset = false;
+            timer.Elapsed += Timer_Elapsed;
+
         }
+
+        private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            machine.Fire(TrafficLightTrigger.ElapsedTime);
+        }
+
+        public void Push() => machine.Fire(TrafficLightTrigger.Push);
+
+        public void Break() => machine.Fire(TrafficLightTrigger.Break);
+
+        public bool CanPush => machine.CanFire(TrafficLightTrigger.Push);
 
     }
 
@@ -71,6 +117,17 @@ namespace state_machine_demo
     {        
         Green,
         Red,
+        Yellow,
+        Blinking
+    }
+
+    public enum TrafficLightTrigger
+    {
+        Push,
+
+        Break,
+
+        ElapsedTime
     }
 
 }
