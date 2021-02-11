@@ -15,6 +15,67 @@ Na początku maszyna stanów przyjmuje stan początkowy. Przejścia pomiędzy st
 
 ![State machine abstract](drafts/state-machine-abstract.png)
 
+## Instalacja biblioteki
+
+~~~ bash
+dotnet add package Stateless
+~~~
+
+## Definicja maszyny stanów
+Za pomocą konstruktora określamy typ stanu (State), typ wyzwalacza (Trigger) oraz stan początkowy (Init State).
+~~~ csharp
+ StateMachine<TrafficLightState, TrafficLightTrigger> machine = new StateMachine<TrafficLightState, TrafficLightTrigger>(TrafficLightState.Green);
+~~~
+
+## Konfiguracja przejść 
+~~~ csharp
+ machine.Configure(TrafficLightState.Green)                
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Yellow)
+                .Permit(TrafficLightTrigger.Break, TrafficLightState.Blinking);
+
+            machine.Configure(TrafficLightState.Yellow)                
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Red);
+
+            machine.Configure(TrafficLightState.Red)                
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Green)
+                .Permit(TrafficLightTrigger.Break, TrafficLightState.Blinking);
+
+            machine.Configure(TrafficLightState.Blinking)
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Red);
+~~~
+
+## Uruchomienie wyzwalacza
+Na podstawie wcześniej zdefiniowanej konfiguracji nastąpi przejście do kolejnego stanu.
+Jeśli przejście nie zostało zdefiniowane pojawi się Exception.
+
+~~~ csharp
+machine.Fire(TrafficLightTrigger.Push);
+~~~
+
+## Sprawdzenie możliwości uruchomienia wyzwalacza
+~~~ csharp
+machine.CanFire(TrafficLightTrigger.Push)
+~~~
+
+## Pobranie bieżącego stanu
+~~~ csharp
+Console.WriteLine(machine.State)
+~~~ 
+
+
+## Śledzenie maszyny stanów   
+Możemy również logować przejścia pomiędzy stanami.
+
+~~~ csharp
+ machine.OnTransitioned(t=> logger.LogInfo($"{t.Source} -> {t.Destination}"));
+~~~    
+
+
+## Wygenerowanie grafu
+~~~ csharp
+Console.WriteLine(Stateless.Graph.UmlDotGraph.Format(machine.GetInfo()));
+~~~
+Zostanie wygenerowany graf w formacie [ DOT Graph](https://en.wikipedia.org/wiki/DOT_(graph_description_language)), który można następnie zwizualizować!
 
 ## Wizualizacja grafu
 - http://www.webgraphviz.com
