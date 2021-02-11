@@ -65,7 +65,29 @@ machine.CanFire(TrafficLightTrigger.Push)
 Za pomocą właściwości _State_ możemy odczytać bieżący stan maszyny.
 ~~~ csharp
 Console.WriteLine(machine.State)
-~~~ 
+~~~
+
+### Przejścia warunkowe
+~~~ csharp
+public bool IsNight => DateTime.Now.TimeOfDay < TimeSpan.Parse("23:00");
+
+ machine.Configure(TrafficLightState.Red)                
+                .PermitIf(TrafficLightTrigger.Push, TrafficLightState.Green,    () => !IsNight)
+                .PermitIf(TrafficLightTrigger.Push, TrafficLightState.Blinking, () => IsNight)                
+~~~
+
+### Uruchamianie metod przy przejściach
+Przy wchodzeniu i wychodzeniu ze stanu możemy uruchamiać dodatkowe metody:
+
+~~~ csharp
+ machine.Configure(TrafficLightState.Red)                
+                .OnEntry(() => Console.WriteLine("<xml><color>green</color></xml>"))
+                .OnEntry(()=> timer.Start(), "Start timer")
+                .OnExit(()=> timer.Stop(), "Stop timer")               
+                .Permit(TrafficLightTrigger.Push, TrafficLightState.Yellow)
+                .Permit(TrafficLightTrigger.Break, TrafficLightState.Blinking);
+~~~
+
 
 ## Śledzenie maszyny stanów   
 Możemy również logować przejścia pomiędzy stanami.
