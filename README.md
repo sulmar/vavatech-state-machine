@@ -28,6 +28,8 @@ Za pomocą konstruktora określamy typ stanu (State), typ wyzwalacza (Trigger) o
 ~~~
 
 ## Konfiguracja przejść 
+
+Za pomocą metody _Configure_ konfigurujemy określony stan, a za pomocą metody _Permit_ definiujemy dopuszczalne przejście pomiędzy stanami.
 ~~~ csharp
  machine.Configure(TrafficLightState.Green)                
                 .Permit(TrafficLightTrigger.Push, TrafficLightState.Yellow)
@@ -46,22 +48,24 @@ Za pomocą konstruktora określamy typ stanu (State), typ wyzwalacza (Trigger) o
 
 ## Uruchomienie wyzwalacza
 Na podstawie wcześniej zdefiniowanej konfiguracji nastąpi przejście do kolejnego stanu.
-Jeśli przejście nie zostało zdefiniowane pojawi się Exception.
+Jeśli przejście nie zostało zdefiniowane wygenerowany zostanie wyjątek.
 
 ~~~ csharp
 machine.Fire(TrafficLightTrigger.Push);
 ~~~
 
 ## Sprawdzenie możliwości uruchomienia wyzwalacza
+Jeśli chcemy uniknąć wyjątku możemy odpytać maszynę czy możliwe jest przejście z bieżącego stanu do określonego stanu.
+
 ~~~ csharp
 machine.CanFire(TrafficLightTrigger.Push)
 ~~~
 
 ## Pobranie bieżącego stanu
+Za pomocą właściwości _State_ możemy odczytać bieżący stan maszyny.
 ~~~ csharp
 Console.WriteLine(machine.State)
 ~~~ 
-
 
 ## Śledzenie maszyny stanów   
 Możemy również logować przejścia pomiędzy stanami.
